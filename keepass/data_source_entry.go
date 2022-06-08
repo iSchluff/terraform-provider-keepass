@@ -2,11 +2,9 @@ package keepass
 
 import (
 	"context"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/tobischo/gokeepasslib/v3"
 )
 
 func dataSourceEntry() *schema.Resource {
@@ -46,65 +44,17 @@ func dataSourceEntry() *schema.Resource {
 	}
 }
 
-func findEntry(db *gokeepasslib.Database, path string) (*gokeepasslib.Entry, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	parts := strings.Split(path, "/")
-	if len(parts) < 2 {
-		return nil, diag.Errorf("entry path '%s' does not contain any slashes", path)
-	}
-
-	// find group in root
-	name := parts[0]
-	var group *gokeepasslib.Group
-	for _, item := range db.Content.Root.Groups {
-		if item.Name == name {
-			group = &item
-			break
-		}
-	}
-	if group == nil {
-		diags = append(diags, diag.Errorf("group %s in path %s not found", name, path)...)
-		return nil, diags
-	}
-
-	// find group in subgroups
-	for i := 1; i < len(parts)-1; i++ {
-		name = parts[i]
-		for _, item := range group.Groups {
-			if item.Name == name {
-				group = &item
-				break
-			}
-		}
-		if group == nil {
-			return nil, diag.Errorf("group %s in path %s not found", name, path)
-		}
-	}
-
-	// find entry in group
-	name = parts[len(parts)-1]
-	var entry *gokeepasslib.Entry
-	for _, item := range group.Entries {
-		if item.GetTitle() == name {
-			entry = &item
-			break
-		}
-	}
-	if entry == nil {
-		return nil, diag.Errorf("entry %s in path %s not found", name, path)
-	}
-
-	return entry, diags
-}
 
 func dataSourceEntryRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	db := m.(*gokeepasslib.Database)
+	meta := m.(*Meta)
+	meta.mutex.Lock()
+	defer meta.mutex.Unlock()
 
 	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
 
 	path := d.Get("path").(string)
-	entry, res := findEntry(db, path)
+	entry, res := findEntry(meta.db, path)
 	diags = append(diags, res...)
 	if diags.HasError() {
 		return diags

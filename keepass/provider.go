@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/tobischo/gokeepasslib/v3"
 
@@ -29,8 +30,17 @@ func Provider() *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"keepass_entry": dataSourceEntry(),
 		},
+		ResourcesMap: map[string]*schema.Resource{
+			"keepass_entry": resourceEntry(),
+		},
 		ConfigureContextFunc: providerConfigure,
 	}
+}
+
+type Meta struct {
+	db   *gokeepasslib.Database
+	path string
+	mutex sync.Mutex
 }
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
@@ -70,7 +80,11 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 
 		return nil, diags
 	}
-	db.UnlockProtectedEntries()
+	err = db.UnlockProtectedEntries()
+	if err != nil {
+		return nil, diag.Errorf("unlock failed: %s", err)
+	}
+	meta := &Meta{db: db, path: database}
 
-	return db, diags
+	return meta, diags
 }
