@@ -17,7 +17,7 @@ Do not keep your database password in HCL for production environments, use Terra
 
 ```terraform
 provider "keepass" {
-  username = "passwords.kdbx"
+  database = "passwords.kdbx"
   password = "test123"
 }
 ```
