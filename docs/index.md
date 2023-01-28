@@ -19,6 +19,7 @@ Do not keep your database password in HCL for production environments, use Terra
 provider "keepass" {
   database = "passwords.kdbx"
   password = "test123"
+  key = "file.key"
 }
 ```
 
@@ -28,3 +29,4 @@ provider "keepass" {
 
 - **database** (String) Path to database file
 - **password** (String) Password to decrypt the database
+- **key** (String) Key to decrypt the database

@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     keepass = {
-      versions = ["0.1.0"]
+      version = "~> 0.2.0"
       source = "ischluff/keepass"
     }
   }
