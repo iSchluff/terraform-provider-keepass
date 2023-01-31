@@ -25,6 +25,11 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KEEPASS_PASSWORD", nil),
 			},
+			"key": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KEEPASS_KEY", nil),
+			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"keepass_entry": dataSourceEntry(),
@@ -36,6 +41,7 @@ func Provider() *schema.Provider {
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	database := d.Get("database").(string)
 	password := d.Get("password").(string)
+	key := d.Get("key").(string)
 
 	var diags diag.Diagnostics
 
@@ -59,7 +65,23 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	}
 
 	db := gokeepasslib.NewDatabase()
-	db.Credentials = gokeepasslib.NewPasswordCredentials(password)
+	if key != "" {
+		db.Credentials, err = gokeepasslib.NewPasswordAndKeyCredentials(
+			password,
+			key,
+		)
+		if err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Unable to decode keepass database with the given password and key",
+				Detail:   err.Error(),
+			})
+
+			return nil, diags
+		}
+	} else {
+		db.Credentials = gokeepasslib.NewPasswordCredentials(password)
+	}
 	err = gokeepasslib.NewDecoder(file).Decode(db)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
