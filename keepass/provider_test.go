@@ -7,8 +7,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-var testAccProviders map[string]*schema.Provider
-var testAccProvider *schema.Provider
+var (
+	testAccProviders map[string]*schema.Provider
+	testAccProvider  *schema.Provider
+)
 
 func init() {
 	testAccProvider = Provider()
@@ -28,10 +30,6 @@ func TestProvider_impl(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	if err := os.Getenv("KEEPASS_DATABASE"); err == "" {
-		t.Fatal("KEEPASS_DATABASE must be set for acceptance tests")
-	}
-	if err := os.Getenv("KEEPASS_PASSWORD"); err == "" {
-		t.Fatal("KEEPASS_PASSWORD must be set for acceptance tests")
-	}
+	os.Setenv("KEEPASS_DATABASE", "testdata/test.kdbx")
+	os.Setenv("KEEPASS_PASSWORD", "foobar")
 }

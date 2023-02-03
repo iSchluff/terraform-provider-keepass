@@ -2,6 +2,7 @@
 terraform-provider-keepass
 bin
 vendor
+/.vscode
 
 # Local .terraform directories
 **/.terraform/*
