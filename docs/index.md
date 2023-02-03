@@ -27,6 +27,6 @@ provider "keepass" {
 
 ### Optional
 
-- **database** (String) Path to database file
-- **password** (String) Password to decrypt the database
-- **key** (String) Key to decrypt the database
+- **database** (String) Path to database file, defaults to KEEPASS_DATABASE environment variable
+- **password** (String) Password to decrypt the database file, defaults to KEEPASS_PASSWORD environment variable
+- **key** (String) Key to decrypt the database, defaults to KEEPASS_KEY environment variable
