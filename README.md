@@ -41,3 +41,8 @@ Run the following command to initialize the workspace and apply the sample confi
 ```shell
 $ terraform init && terraform apply
 ```
+
+## Run tests
+```shell
+$ make test
+```
