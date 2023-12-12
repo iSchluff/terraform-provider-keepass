@@ -17,6 +17,22 @@ func dataSourceEntry() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"matches": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 			"title": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -51,7 +67,7 @@ func dataSourceEntry() *schema.Resource {
 	}
 }
 
-func findEntry(db *gokeepasslib.Database, path string) (*gokeepasslib.Entry, diag.Diagnostics) {
+func findEntry(db *gokeepasslib.Database, path string, matches []map[string]string) (*gokeepasslib.Entry, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	parts := strings.Split(path, "/")
 	if len(parts) < 2 {
@@ -91,8 +107,20 @@ func findEntry(db *gokeepasslib.Database, path string) (*gokeepasslib.Entry, dia
 	var entry *gokeepasslib.Entry
 	for _, item := range group.Entries {
 		if item.GetTitle() == name {
-			entry = &item
-			break
+			// check if the item matches all matches
+			// if not, continue with next item
+			entryMatchesAllMatchers := true
+			for _, match := range matches {
+				if item.GetContent(match["key"]) != match["value"] {
+					entryMatchesAllMatchers = false
+					break
+				}
+			}
+
+			if entryMatchesAllMatchers {
+				entry = &item
+				break
+			}
 		}
 	}
 	if entry == nil {
@@ -109,7 +137,9 @@ func dataSourceEntryRead(ctx context.Context, d *schema.ResourceData, m interfac
 	var diags diag.Diagnostics
 
 	path := d.Get("path").(string)
-	entry, res := findEntry(db, path)
+	matches := convertMatches(d.Get("matches"))
+
+	entry, res := findEntry(db, path, matches)
 	diags = append(diags, res...)
 	if diags.HasError() {
 		return diags
@@ -139,4 +169,22 @@ func dataSourceEntryRead(ctx context.Context, d *schema.ResourceData, m interfac
 	d.SetId(path)
 
 	return diags
+}
+
+func convertMatches(matchInterface interface{}) []map[string]string {
+	if matchInterface != nil {
+		rawMatches := matchInterface.(*schema.Set).List()
+		matches := make([]map[string]string, 0, len(rawMatches))
+		for _, v := range rawMatches {
+			matchAsInterface := v.(map[string]interface{})
+			match := make(map[string]string)
+			for k, v := range matchAsInterface {
+				match[k] = v.(string)
+			}
+			matches = append(matches, match)
+		}
+		return matches
+	} else {
+		return make([]map[string]string, 0)
+	}
 }

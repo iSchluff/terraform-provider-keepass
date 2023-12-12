@@ -23,6 +23,22 @@ data "keepass_entry" "foo" {
 The following attributes must be specified.
 
 - `path` - Slash separated path to the database entry. The path names are matched to the group/entry title attributes.
+- `matches`- (Optional) One or multiple matcher-blocks to filter entries by fields. This is useful if there are multiple entries with the same title.
+  ```terraform
+  data "keepass_entry" "foo" {
+    path = "Root/mygroup/myentry"
+
+    matches {
+      key = "UserName"
+      value = "jane.doe"
+    }
+
+    matches {
+      key = "URL"
+      value = "https://myentry.com"
+    }
+  }
+  ```
 
 
 The following attributes are exported.
