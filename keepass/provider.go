@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/tobischo/gokeepasslib/v3"
 
@@ -66,10 +67,17 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 
 	db := gokeepasslib.NewDatabase()
 	if key != "" {
-		db.Credentials, err = gokeepasslib.NewPasswordAndKeyCredentials(
-			password,
-			key,
-		)
+		if strings.HasPrefix(key, "<?xml") {
+			db.Credentials, err = gokeepasslib.NewPasswordAndKeyDataCredentials(
+				password,
+				[]byte(key),
+			)
+		} else {
+			db.Credentials, err = gokeepasslib.NewPasswordAndKeyCredentials(
+				password,
+				key,
+			)
+		}
 		if err != nil {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
